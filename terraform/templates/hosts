@@ -1,0 +1,39 @@
+---
+kali_host:
+    hosts:
+        %{ for index, host in kali_instances }
+        kali_host_${ index }:
+            ansible_host: ${host.private_ip}
+            ansible_user: kali
+            ansible_user_vnc_password: ${kali_host_vnc_password}
+            ansible_python_interpreter: /usr/bin/python3
+            ansible_ssh_private_key_file: ../terraform/${kali_host_keyfile}
+            ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q admin@${jump_host_public} -i ../terraform/${jump_host_keyfile}"'
+        %{ endfor ~}
+
+jump_host:
+    hosts:
+        jump_host_01:
+            ansible_host: ${jump_host_public}
+            ansible_user: admin
+            ansible_python_interpreter: /usr/bin/python3
+            ansible_ssh_private_key_file: ../terraform/${jump_host_keyfile}
+            freedns_ipv4_update_url: ${freedns_ipv4_update_url}
+            freedns_ipv6_update_url: ${freedns_ipv6_update_url}
+            freedns_domain_name: ${freedns_domain_name}
+            freedns_email_addr: ${freedns_email}
+            guac_domain_name: ${freedns_domain_name}
+            guac_admin_pass: ${guac_admin_pass}
+            guac_connections:
+                %{ for index, host in kali_instances }
+                - name: kali_${ index }
+                  addr: ${host.private_ip}
+                  port: 5901
+                  pass: ${kali_host_vnc_password}
+                %{ endfor ~}
+            guac_users:
+                - name: red_player
+                  pass: ${guac_red_player_pass}
+                  connections:
+                    - kali
+                    - solr

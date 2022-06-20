@@ -1,0 +1,8 @@
+admin_key
+admin_key.pub
+kali_key
+kali_key.pub
+secrets.tf
+.terraform
+.terraform.lock.hcl
+*.swp
