@@ -1,0 +1,101 @@
+- name: Setup Cron IPv4 Domain Update
+  cron:
+    name: "IPv4 Domain Update Reboot"
+    special_time: reboot
+    job: "sleep 49 ; wget -4 --no-check-certificate -O - {{freedns_ipv4_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v4.log 2>&1 &"
+
+- name: Setup Cron IPv4 Domain Update
+  cron:
+    name: "IPv4 Domain Update Minutes"
+    minute: "0,5,10,15,20,25,30,35,40,45,50,55"
+    job: "sleep 49 ; wget -4 --no-check-certificate -O - {{freedns_ipv4_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v4.log 2>&1 &"
+
+- name: Run IPv4 Domain Update
+  shell:
+    cmd: "wget -4 --no-check-certificate -O - {{freedns_ipv4_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v4.log 2>&1"
+    warn: false
+
+- name: Setup Cron IPv6 Domain Update
+  cron:
+    name: "IPv6 Domain Update Reboot"
+    special_time: reboot
+    job: "sleep 18 ; wget -6 --no-check-certificate -O - {{freedns_ipv6_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v6.log 2>&1 &"
+
+- name: Setup Cron IPv6 Domain Update
+  cron:
+    name: "IPv6 Domain Update Minutes"
+    minute: "0,5,10,15,20,25,30,35,40,45,50,55"
+    job: "sleep 18 ; wget -6 --no-check-certificate -O - {{freedns_ipv6_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v6.log 2>&1 &"
+
+- name: Run IPv6 Domain Update
+  shell:
+    cmd: "wget -6 --no-check-certificate -O - {{freedns_ipv6_update_url}} >> /tmp/freedns_log4jrange_lee_mx_v6.log 2>&1"
+    warn: false
+
+- name: Determine if Guacamole-Docker-Compose (GDC) Source Should be Downloaded
+  stat:
+    path: /home/{{ansible_user}}/guacamole-docker-compose/nginx_user_conf.d/reverse_proxy.conf
+  register: gdc_present
+
+- name: Download Guacamole-Docker-Compose (GDC) Source if Needed
+  become: true
+  become_user: "{{ansible_user}}"
+  git:
+    repo: https://github.com/kc0bfv/guacamole-docker-compose.git
+    dest: /home/{{ansible_user}}/guacamole-docker-compose
+  when: gdc_present.stat.exists == false
+
+- name: Replace GDC Nginx Server Name
+  become: true
+  become_user: "{{ansible_user}}"
+  lineinfile:
+    path: /home/{{ansible_user}}/guacamole-docker-compose/nginx_user_conf.d/reverse_proxy.conf
+    regexp: 'server_name'
+    line: "server_name {{freedns_domain_name}};"
+
+- name: Replace GDC Certbot Email Address
+  become: true
+  become_user: "{{ansible_user}}"
+  lineinfile:
+    path: /home/{{ansible_user}}/guacamole-docker-compose/docker-compose.yml
+    regexp: 'CERTBOT_EMAIL'
+    line: "     CERTBOT_EMAIL: {{freedns_email_addr}}"
+
+- name: Run GDC Prepare
+  command:
+    chdir: /home/{{ansible_user}}/guacamole-docker-compose
+    cmd: ./prepare.sh
+    creates: /home/{{ansible_user}}/guacamole-docker-compose/prepare_ran_successfully
+  register: gdc_prepare
+
+- name: Create GDC Prepare Success if Needed
+  when: gdc_prepare.changed
+  file:
+    state: touch
+    path: /home/{{ansible_user}}/guacamole-docker-compose/prepare_ran_successfully
+    modification_time: preserve
+    access_time: preserve
+
+- name: Run GDC
+  command:
+    chdir: /home/{{ansible_user}}/guacamole-docker-compose
+    cmd: docker-compose up -d
+
+- name: Deploy GuacamoleREST Config Tool
+  become: true
+  become_user: "{{ansible_user}}"
+  git:
+    repo: https://github.com/kc0bfv/guacamoleREST.git
+    dest: /home/{{ansible_user}}/guacamoleREST
+
+- name: Deploy GuacamoleREST Command File
+  become: true
+  become_user: "{{ansible_user}}"
+  template:
+    src: guac_rest_cmd_file
+    dest: /home/{{ansible_user}}/guacamoleREST/cmd_file
+
+- name: Run GuacamoleREST Config
+  become: true
+  become_user: "{{ansible_user}}"
+  shell: /home/{{ansible_user}}/guacamoleREST/guacREST.py --delay /home/{{ansible_user}}/guacamoleREST/cmd_file

@@ -60,7 +60,7 @@ locals {
 
   admin_public_ipv6_cidr_block   = cidrsubnet(local.first_qtr_ipv6_cidr_block, 6, 1)
   admin_internal_ipv6_cidr_block = cidrsubnet(local.first_qtr_ipv6_cidr_block, 6, 2)
-  kali_ipv6_cidr_block     = cidrsubnet(local.second_qtr_ipv6_cidr_block, 6, 1)
+  kali_ipv6_cidr_block           = cidrsubnet(local.second_qtr_ipv6_cidr_block, 6, 1)
 }
 
 resource "aws_vpc" "vpc" {

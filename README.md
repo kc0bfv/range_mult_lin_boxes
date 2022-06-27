@@ -1,0 +1,1 @@
+This is an automated cloud deployment that stands up some kali boxes and gives them a Guack server interface.  You'll need to deploy the infrastructure then configure it.  Check out `terraform/README.md` to deploy, then `ansible/README.md` to configure.

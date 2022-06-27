@@ -25,10 +25,12 @@ resource "aws_route_table" "kali_private_route_table" {
   route {
     cidr_block           = "0.0.0.0/0"
     network_interface_id = aws_network_interface.jump_host_private_int.id
+    #instance_id = aws_instance.jump_host.id
   }
   route {
     ipv6_cidr_block      = "::/0"
     network_interface_id = aws_network_interface.jump_host_private_int.id
+    #instance_id = aws_instance.jump_host.id
   }
   tags = {
     Environment = var.environ_tag
@@ -52,7 +54,7 @@ resource "aws_key_pair" "kali_key" {
 }
 
 resource "aws_instance" "kali_host" {
-  count = var.kali_count
+  count                  = var.kali_count
   ami                    = var.kali_ami
   instance_type          = var.medium_machine
   subnet_id              = aws_subnet.kali_private_subnet.id

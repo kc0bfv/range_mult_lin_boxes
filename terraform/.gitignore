@@ -5,4 +5,6 @@ kali_key.pub
 secrets.tf
 .terraform
 .terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
 *.swp

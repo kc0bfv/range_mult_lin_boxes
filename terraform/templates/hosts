@@ -1,7 +1,7 @@
 ---
 kali_host:
     hosts:
-        %{ for index, host in kali_instances }
+        %{~ for index, host in kali_instances ~}
         kali_host_${ index }:
             ansible_host: ${host.private_ip}
             ansible_user: kali
@@ -9,7 +9,7 @@ kali_host:
             ansible_python_interpreter: /usr/bin/python3
             ansible_ssh_private_key_file: ../terraform/${kali_host_keyfile}
             ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q admin@${jump_host_public} -i ../terraform/${jump_host_keyfile}"'
-        %{ endfor ~}
+        %{~ endfor ~}
 
 jump_host:
     hosts:
@@ -25,15 +25,16 @@ jump_host:
             guac_domain_name: ${freedns_domain_name}
             guac_admin_pass: ${guac_admin_pass}
             guac_connections:
-                %{ for index, host in kali_instances }
+                %{~ for index, host in kali_instances ~}
                 - name: kali_${ index }
                   addr: ${host.private_ip}
                   port: 5901
                   pass: ${kali_host_vnc_password}
-                %{ endfor ~}
+                %{~ endfor ~}
             guac_users:
-                - name: red_player
-                  pass: ${guac_red_player_pass}
+                %{~ for index, host in kali_instances ~}
+                - name: kali_user_${ index }
+                  pass: ${ guac_kali_pass_base }_${ index }
                   connections:
-                    - kali
-                    - solr
+                    - kali_${ index }
+                %{~ endfor ~}
